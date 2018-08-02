@@ -14,6 +14,8 @@ import atos.magie_magie.dao.PartieDAOCrud;
 import atos.magie_magie.entity.Carte;
 import atos.magie_magie.entity.Carte.TypeIngredient;
 import atos.magie_magie.entity.Joueur;
+import atos.magie_magie.entity.Joueur.EtatJoueur;
+import static atos.magie_magie.entity.Joueur_.etatJoueur;
 import atos.magie_magie.entity.Partie;
 import java.util.List;
 import java.util.Random;
@@ -30,13 +32,13 @@ public class PartieService {
 
     @Autowired
     private PartieDAOCrud dAOCrud;
-    
+
     @Autowired
     private JoueurDAOCrud joueurDAOCrud;
-    
+
     @Autowired
     private CarteDAOCrud carteDAOCrud;
-    
+
 //    @Autowired
 //    private CarteService carteService;
     private PartieDAO partiedao = new PartieDAO();
@@ -49,80 +51,81 @@ public class PartieService {
      *
      * @return
      */
-    
-    public void lancerSortSommeilProfond(long idVictime){
-        
-        Joueur joueurVictime = joueurdao.rechercheJoueurParId(idVictime);
+    @Transactional
+    public void lancerSortSommeilProfond(long idVictime) {
+
+        Joueur joueurVictime = joueurDAOCrud.findOne(idVictime);
         joueurVictime.setEtatJoueur(Joueur.EtatJoueur.SOMMEIL_PROFOND);
-        joueurdao.majJoueur(joueurVictime);
+        joueurDAOCrud.save(joueurVictime);
     }
-    
-    public List<Joueur> lancerSortDivination (long idJoueurActuel, long idPartie) {
-        
-     return joueurdao.listerJoueursParPartieIdQuiSontPasIdSorciere(idJoueurActuel, idPartie);
+
+    public List<Joueur> lancerSortDivination(long idJoueurActuel, long idPartie) {
+
+        return joueurDAOCrud.listerJoueursParPartieIdQuiSontPasIdSorcier(idJoueurActuel, idPartie);
     }
-    
-    public void passerSonTour( long idPartie, long idJoueur){
-        
+
+    public void passerSonTour(long idPartie, long idJoueur) {
+
         piocher(idJoueur);
         passeJoueurSuivant(idPartie);
-        
+
     }
-    
-    public Partie rechercherPartieParId( long idPartie){
-        
-       return partiedao.rechercherParId(idPartie);
-       
+
+    public Partie rechercherPartieParId(long idPartie) {
+
+        return dAOCrud.findOne(idPartie);
+
     }
-    
-    public void lancerSortHypnose(long idJoueurActuel, long idVictime, long idCarte){
-        
+
+    public void lancerSortHypnose(long idJoueurActuel, long idVictime, long idCarte) {
+
         //choisir un joueur 
-        Joueur joueurVictime = joueurdao.rechercheJoueurParId(idVictime);
-        Joueur joueurActuel = joueurdao.rechercheJoueurParId(idJoueurActuel);
-        
-        
+        Joueur joueurVictime = joueurDAOCrud.findOne(idVictime);
+        Joueur joueurActuel = joueurDAOCrud.findOne(idJoueurActuel);
+
         //Le joueur actuel donne une carte de son choix à la victime
         carteService.donnerUneCarteDeSonChoix(idJoueurActuel, idVictime, idCarte);
-        
+
         // le joueur actuel prend 3 cartes au hasard à la victime
         for (int i = 0; i < 3; i++) {
-        carteService.prendreCarteHasard(idJoueurActuel, idVictime);
+            carteService.prendreCarteHasard(idJoueurActuel, idVictime);
         }
     }
-    
+
     public void lancerSortphiltreDamour(long idPartie, long idJoueurActuel, long idVictime) {
-        
+
         //choisir un joueur 
-        Joueur joueurVictime = joueurdao.rechercheJoueurParId(idVictime);
-        
+        Joueur joueurVictime = joueurDAOCrud.findOne(idVictime);
+
         //Le joueur actuel prend 50% des cartes au hasard à la victime
-        int moitieCarte ;
-        
-        if ((joueurVictime.getCartes().size()%2)==1) {
-            moitieCarte = joueurVictime.getCartes().size()/2 +1;
-        }else moitieCarte = joueurVictime.getCartes().size()/2;
-        
-        for (int i = 0; i < moitieCarte ; i++) {
+        int moitieCarte;
+
+        if ((joueurVictime.getCartes().size() % 2) == 1) {
+            moitieCarte = joueurVictime.getCartes().size() / 2 + 1;
+        } else {
+            moitieCarte = joueurVictime.getCartes().size() / 2;
+        }
+
+        for (int i = 0; i < moitieCarte; i++) {
             carteService.prendreCarteHasard(idJoueurActuel, idVictime);
-            
+
         }
         // Victime perdu si cartes<1 perdu sinon continue
-        
+
         int nrbCarteVictime = joueurVictime.getCartes().size();
-        
-        if (nrbCarteVictime <= 1) 
-            
-           joueurVictime.setEtatJoueur(Joueur.EtatJoueur.PERDU);
-           
-        joueurdao.majJoueur(joueurVictime);
-        
+
+        if (nrbCarteVictime <= 1) {
+            joueurVictime.setEtatJoueur(Joueur.EtatJoueur.PERDU);
+        }
+
+        joueurDAOCrud.save(joueurVictime);
+
     }
-    
+
     public void lancerSortInvisibilite(long idPartie, long idJoueurActuel) {
-        
-        List<Joueur> joueursPartie = joueurdao.listerJoueursParPartieId(idPartie);
-        
+
+        List<Joueur> joueursPartie = joueurDAOCrud.findAllByPartieId(idPartie);
+
         for (Joueur victime : joueursPartie) {
             carteService.prendreCarteHasard(idJoueurActuel, victime.getId());
         }
@@ -141,22 +144,22 @@ public class PartieService {
                 || (c1.getTypeIngredient() == TypeIngredient.CRAPAUD && c2.getTypeIngredient() == TypeIngredient.LICORNE)) {
             System.out.println("Le sort est invisibilité : le joueur prend 1 carte(au hasard) chez tous ses adversaires");
             lancerSortInvisibilite(idPartie, idJoueurActuel);
-            
+
         } else if ((c1.getTypeIngredient() == TypeIngredient.LICORNE && c2.getTypeIngredient() == TypeIngredient.MANDRAGORE)
                 || (c1.getTypeIngredient() == TypeIngredient.MANDRAGORE && c2.getTypeIngredient() == TypeIngredient.LICORNE)) {
             System.out.println("Le sort est philtre d'amour : le joueur de votre choix vous donne la moitié de ses cartes(au hasard)");
             lancerSortphiltreDamour(idPartie, idVictime, idJoueurActuel);
-            
+
         } else if ((c1.getTypeIngredient() == TypeIngredient.CRAPAUD && c2.getTypeIngredient() == TypeIngredient.LAPIS_LAZULI)
                 || (c1.getTypeIngredient() == TypeIngredient.LAPIS_LAZULI && c2.getTypeIngredient() == TypeIngredient.CRAPAUD)) {
             System.out.println("Le sort est Hipnose : le joueur échange une carte de son choix contre trois cartes(au hasard) de la victime qu’il choisit");
             lancerSortHypnose(idJoueurActuel, idVictime, idCarteAEchanger);
-            
+
         } else if ((c1.getTypeIngredient() == TypeIngredient.LAPIS_LAZULI && c2.getTypeIngredient() == TypeIngredient.CHAUVE_SOURIS)
                 || (c1.getTypeIngredient() == TypeIngredient.CHAUVE_SOURIS && c2.getTypeIngredient() == TypeIngredient.LAPIS_LAZULI)) {
             System.out.println("Le sort est divination : le joueur peut voir les cartes de tous les autres joueurs");
             lancerSortDivination(idJoueurActuel, idPartie);
-            
+
         } else if ((c1.getTypeIngredient() == TypeIngredient.MANDRAGORE && c2.getTypeIngredient() == TypeIngredient.CHAUVE_SOURIS)
                 || (c1.getTypeIngredient() == TypeIngredient.CHAUVE_SOURIS && c2.getTypeIngredient() == TypeIngredient.MANDRAGORE)) {
             System.out.println("Le sort est sommeil-profond : le joueur choisit une victime qui ne pourra pas lancer de sorts pendant 2 tours");
@@ -171,13 +174,13 @@ public class PartieService {
         passeJoueurSuivant(idPartie);
 
     }
-    
+
     @Transactional
     private void piocher(long idJoueur) {
 
         // Le joueur pioche une carte
         Joueur joueur = joueurDAOCrud.findOne(idJoueur);
-        
+
         Carte carte = nouvelleCarte();
 
         // on lie la carte au joueur
@@ -192,18 +195,22 @@ public class PartieService {
 
     }
 
+    @Transactional
     private void passeJoueurSuivant(long idPartie) {
 
         // Réccuper id du joueur que à la main
-        Joueur joueurQuiALaMain = joueurdao.rechercherJoueurQuiALaMainParPartieId(idPartie);
+        
+        //!!!!!!!!!!!!!!!!ne fonctionne pas!!!!!!!!!!!!!!!!!!
+        Joueur joueurQuiALaMain = joueurDAOCrud.rechercherJoueurQuiALaMainParPartieId(idPartie);
 
         //Determine si tous les autres joueurs ont perdus
         //et passe le joueur à l'état gagné si c'est le cas puis quitte la fonction
         // pas besoin d'écrire true et else.. cela se fait automatiquement
-        if (joueurdao.determineSiPlusQueUnJoueurDansPartie(idPartie)) {
+        
+        if (joueurDAOCrud.determineSiPlusQueUnJoueurDansPartie(idPartie)) {
 
             joueurQuiALaMain.setEtatJoueur(Joueur.EtatJoueur.GAGNE);
-            joueurdao.modifier(joueurQuiALaMain);
+            joueurDAOCrud.save(joueurQuiALaMain);
             return;
             // return pour interompre la fonction
         }
@@ -211,7 +218,7 @@ public class PartieService {
         // (si j'arrive ici ) La partie n'est pas terminée donc joueur à gagné
         // sinon on continue 
         //Recupère l'ordre max des joueurs de la partie
-        long ordreMax = partiedao.rechercheOrdreMaxJoueurPourPartieId(idPartie);
+        long ordreMax = dAOCrud.rechercheOrdreMaxJoueurPourPartieId(idPartie);
 
         //joueurEvalue = joueurQuiALaMain
         Joueur joueurEvalue = joueurQuiALaMain;
@@ -220,7 +227,7 @@ public class PartieService {
 
             //Si joueurEvalue est le dernier joueur alors on evalue le premier
             if (joueurEvalue.getOrdre() >= ordreMax) {
-                joueurEvalue = joueurdao.rechercheJoueurParPartieIdEtOrdre(idPartie, 0L);
+                joueurEvalue = joueurDAOCrud.findOneByPartieIdAndOrdre(idPartie, ordreMax);
             } else {
                 joueurEvalue = joueurdao.rechercheJoueurParPartieIdEtOrdre(idPartie, joueurEvalue.getOrdre() + 1);
             }
@@ -241,10 +248,10 @@ public class PartieService {
                 if (joueurEvalue.getEtatJoueur() == Joueur.EtatJoueur.N_A_PAS_LA_MAIN) {
                     joueurQuiALaMain.setEtatJoueur(Joueur.EtatJoueur.N_A_PAS_LA_MAIN);
                 }
-                joueurdao.modifier(joueurQuiALaMain);
+                joueurDAOCrud.save(joueurQuiALaMain);
 
                 joueurEvalue.setEtatJoueur(Joueur.EtatJoueur.A_LA_MAIN);
-                joueurdao.modifier(joueurEvalue);
+                joueurDAOCrud.save(joueurEvalue);
 
                 return;
             }
@@ -256,7 +263,7 @@ public class PartieService {
 
         return dAOCrud.listerPartiesNonDemarrees();
     }
-    
+
     @Transactional
     public Partie creerNouvellePartie(String nom) {
 

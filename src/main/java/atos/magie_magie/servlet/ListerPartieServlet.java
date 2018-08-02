@@ -5,6 +5,9 @@
  */
 package atos.magie_magie.servlet;
 
+import atos.magie_magie.dao.JoueurDAOCrud;
+import atos.magie_magie.dao.PartieDAOCrud;
+import atos.magie_magie.entity.Joueur;
 import atos.magie_magie.entity.Partie;
 import atos.magie_magie.service.PartieService;
 import atos.magie_magie.spring.AutowireServlet;
@@ -28,6 +31,12 @@ public class ListerPartieServlet extends AutowireServlet {
     @Autowired
     private PartieService service;
     
+    @Autowired
+    private JoueurDAOCrud jdaocrud;
+    
+    @Autowired
+    private PartieDAOCrud partDAOCrud;
+    
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         
@@ -36,5 +45,8 @@ public class ListerPartieServlet extends AutowireServlet {
         req.setAttribute("listePartie", parties);
         
         req.getRequestDispatcher("listeParties.jsp").forward(req, resp);
+        
+       
+        
     }
 }

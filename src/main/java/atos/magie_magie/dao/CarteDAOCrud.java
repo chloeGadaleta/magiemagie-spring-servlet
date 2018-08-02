@@ -15,4 +15,7 @@ import org.springframework.data.repository.CrudRepository;
  */
 public interface CarteDAOCrud extends CrudRepository<Carte, Long>{
     
+    //donnerUneCarteDeSonChoix(idJoueurActuel, idVictime, idCarte);
+    
+    
 }
